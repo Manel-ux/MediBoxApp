@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1032802364570",
+    "project_id": "carne-de-sante",
+    "storage_bucket": "carne-de-sante.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1032802364570:android:399ecacee45f33ce6a4323",
+        "android_client_info": {
+          "package_name": "com.example.carnetdesante"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtoRFEi0VYLTRdJqUPDNTJqigOWc_ufhs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1032802364570:android:7866048e2d74702d6a4323",
+        "android_client_info": {
+          "package_name": "com.example.carnetsante"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtoRFEi0VYLTRdJqUPDNTJqigOWc_ufhs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
