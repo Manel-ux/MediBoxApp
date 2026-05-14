@@ -1,4 +1,6 @@
 import 'package:carnetdesante/services/notification_service.dart';
+import 'package:carnetdesante/services/referentiel_service.dart';
+import 'package:carnetdesante/widgets/suggestion_field.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -177,25 +179,32 @@ class _MaladiesScreenState extends State<MaladiesScreen> {
     );
   }
 
-  void _ajouterMaladie() {
-    final ctrl = TextEditingController();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => Padding(
+void _ajouterMaladie() {
+  final ctrl = TextEditingController();
+  bool isSaving = false;
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(20))),
+    // ✅ sheetCtx = contexte du bottom sheet
+    builder: (sheetCtx) => StatefulBuilder(
+      builder: (sheetCtx, setLocal) => Padding(
         padding: EdgeInsets.fromLTRB(
-            20, 20, 20,
-            MediaQuery.of(context).viewInsets.bottom + 20),
+            20,
+            20,
+            20,
+            MediaQuery.of(sheetCtx).viewInsets.bottom + 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                     color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(2)),
@@ -207,20 +216,19 @@ class _MaladiesScreenState extends State<MaladiesScreen> {
                     fontWeight: FontWeight.bold,
                     fontSize: 16)),
             const SizedBox(height: 16),
-            TextField(
+            SuggestionField(
+              label: 'Nom de la maladie',
+              icon: Icons.healing_outlined,
+              color: primary,
+              collection: 'MaladiesRef',
+              displayField: 'nomMaladie',
               controller: ctrl,
-              decoration: InputDecoration(
-                labelText: 'Nom de la maladie',
-                prefixIcon: const Icon(Icons.healing_outlined,
-                    color: primary),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                      color: primary, width: 1.5),
-                ),
-              ),
+              selectedData: {},
+              onSelected: (data) {
+                ctrl.text = data['nomMaladie'] ?? '';
+              },
+              onAutre: null,
+              showAutre: false,
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -233,30 +241,46 @@ class _MaladiesScreenState extends State<MaladiesScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular(12))),
-                onPressed: () async {
-                  if (ctrl.text.trim().isEmpty) return;
-                  setState(() {
-                    _maladies.add({
-                      'nomMaladie': ctrl.text.trim(),
-                      'medicaments': [],
-                    });
-                  });
-                  await _sauvegarder();
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
-                },
-                child: const Text('Ajouter',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold)),
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        if (ctrl.text.trim().isEmpty) return;
+                        setLocal(() => isSaving = true);
+                        setState(() {
+                          _maladies.add({
+                            'nomMaladie': ctrl.text.trim(),
+                            'medicaments': [],
+                          });
+                        });
+                        await _sauvegarder();
+                        await ReferentielService
+                            .sauvegarderMaladie(
+                                ctrl.text.trim());
+                        // ✅ sheetCtx défini dans builder
+                        if (sheetCtx.mounted) {
+                          Navigator.pop(sheetCtx);
+                        }
+                      },
+                child: isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2))
+                    : const Text('Ajouter',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold)),
               ),
             ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Future<void> _supprimerMaladie(int index) async {
     final ok = await showDialog<bool>(

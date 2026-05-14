@@ -1,6 +1,8 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
 import 'package:carnetdesante/services/database_service.dart';
+import 'package:carnetdesante/services/referentiel_service.dart';
+import 'package:carnetdesante/widgets/suggestion_field.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:carnetdesante/services/notification_service.dart';
@@ -260,9 +262,18 @@ class _MedicalFormOverlayState extends State<MedicalFormOverlay> {
             ],
           ),
           const SizedBox(height: 10),
-          TextField(
-            decoration: _fieldStyle("Nom de l'allergie", Icons.label_outline),
-            onChanged: (v) => allergy.nomAllergie = v,
+          SuggestionField(
+            label: "Nom de l'allergie",
+            icon: Icons.warning_amber_outlined,
+            color: Colors.orange,
+            collection: 'AllergiesRef',
+            displayField: 'nomAllergie',
+            controller: TextEditingController(text: allergy.nomAllergie),
+            selectedData: {},
+            onSelected: (data) {
+              setState(() => allergy.nomAllergie = data['nomAllergie'] ?? '');
+            },
+            showAutre: false,
           ),
           const SizedBox(height: 8),
           TextField(
@@ -303,10 +314,18 @@ class _MedicalFormOverlayState extends State<MedicalFormOverlay> {
             ],
           ),
           const SizedBox(height: 10),
-          TextField(
-            decoration: _fieldStyle(
-                "Nom de la maladie", Icons.medical_information_outlined),
-            onChanged: (v) => setState(() => maladie.nomMaladie = v),
+          SuggestionField(
+            label: "Nom de la maladie",
+            icon: Icons.healing_outlined,
+            color: const Color(0xFF1BC2AB),
+            collection: 'MaladiesRef',
+            displayField: 'nomMaladie',
+            controller: TextEditingController(text: maladie.nomMaladie),
+            selectedData: {},
+            onSelected: (data) {
+              setState(() => maladie.nomMaladie = data['nomMaladie'] ?? '');
+            },
+            showAutre: false,
           ),
           if (maladie.nomMaladie.isNotEmpty) ...[
             const SizedBox(height: 14),
@@ -600,7 +619,12 @@ class _MedicalFormOverlayState extends State<MedicalFormOverlay> {
 
       // ✅ 4. Planifie les rappels pour les médicaments chroniques avec rappelActif
       for (var maladie in maladies) {
+        await ReferentielService.sauvegarderMaladie(maladie.nomMaladie);
         for (var med in maladie.medicaments) {
+          await ReferentielService.sauvegarderMedicament(
+            nom: med.nom,
+            dosage: med.dosage,
+          );
           if (med.rappelActif && med.heures.every((h) => h.isNotEmpty)) {
             List<int> notifIds = [];
             for (var heure in med.heures) {
@@ -620,7 +644,6 @@ class _MedicalFormOverlayState extends State<MedicalFormOverlay> {
               notifIds.add(id);
             }
 
-            // ✅ 5. Sauvegarde le rappel dans Rappels/Medicaments
             await FirebaseFirestore.instance
                 .collection('Rappels')
                 .doc(uid)
@@ -638,6 +661,9 @@ class _MedicalFormOverlayState extends State<MedicalFormOverlay> {
             });
           }
         }
+      }
+      for (var allergie in allergies) {
+        await ReferentielService.sauvegarderAllergie(allergie.nomAllergie);
       }
 
       if (!mounted) return;

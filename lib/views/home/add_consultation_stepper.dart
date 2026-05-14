@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:carnetdesante/services/notification_service.dart';
+import 'package:carnetdesante/services/referentiel_service.dart';
 import 'package:carnetdesante/widgets/suggestion_field.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -356,35 +357,35 @@ void dispose() {
                   color: Color(0xFF1BC2AB))),
           const SizedBox(height: 12),
           SuggestionField(
-  label: 'Nom du médecin',
-  icon: Icons.person_outline,
-  color: primaryColor,
-  collection: 'Medecins',
-  displayField: 'nomComplet',
-  controller: _medecinNomCtrl,
-  selectedData: _medecinSelectionne,
-  onSelected: (data) {
-    setState(() {
-      _medecinSelectionne = data;
-      _medecinPrenomCtrl.text = data['prenom'] ?? '';
-      _medecinNomCtrl.text    = data['nom'] ?? '';
-      _medecinSpecialiteCtrl.text   = data['specialite'] ?? '';
-      _medecinTelCtrl.text    = data['tel'] ?? '';
-      _medecinAdresseCtrl.text = data['adresse'] ?? '';
-    });
-  },
-  onAutre: () {
-    setState(() => _medecinSelectionne = {});
-  },
-),
+            label: 'Nom du médecin',
+            icon: Icons.person_outline,
+            color: primaryColor,
+            collection: 'Medecins',
+            displayField: 'nomComplet',
+            controller: _medecinNomCtrl,
+            selectedData: _medecinSelectionne,
+            onSelected: (data) {
+              setState(() {
+                _medecinSelectionne = data;
+                _medecinPrenomCtrl.text = data['prenom'] ?? '';
+                _medecinNomCtrl.text    = data['nom'] ?? '';
+                _medecinSpecialiteCtrl.text   = data['specialite'] ?? '';
+                _medecinTelCtrl.text    = data['tel'] ?? '';
+                _medecinAdresseCtrl.text = data['adresse'] ?? '';
+              });
+            },
+            onAutre: () {
+              setState(() => _medecinSelectionne = {});
+            },
+          ),
 
-const SizedBox(height: 10),
+          const SizedBox(height: 10),
 
-_buildTextField(
-  _medecinPrenomCtrl,
-  "Prénom",
-  Icons.person_outline,
-),
+          _buildTextField(
+            _medecinPrenomCtrl,
+            "Prénom",
+            Icons.person_outline,
+          ),
           _buildTextField(_medecinSpecialiteCtrl, "Spécialité",
               Icons.local_hospital_outlined),
           _buildTextField(_medecinTelCtrl, "Téléphone",
@@ -904,12 +905,22 @@ _buildTextField(
                 _buildMediaSelector(ex),
                 const SizedBox(height: 12),
                 // Type d'examen
-                _buildCleanField(
-                  controller: _examenTypeControllers[index],
-                  hint: "Type d'examen",
+                // ✅ Remplace le TextField type d'examen par :
+                SuggestionField(
+                  label: "Type d'examen",
                   icon: Icons.biotech_outlined,
-                  iconColor: color,
-                  onChanged: (v) => examens[index]['type'] = v,
+                  color: color,
+                  collection: 'TypesExamen',
+                  displayField: 'type',
+                  controller: _examenTypeControllers[index],
+                  selectedData: {},
+                  onSelected: (data) {
+                    setState(() {
+                      examens[index]['type'] = data['type'] ?? '';
+                      _examenTypeControllers[index].text = data['type'] ?? '';
+                    });
+                  },
+                  showAutre: false,
                 ),
                 const SizedBox(height: 10),
                 // Date
@@ -1010,8 +1021,35 @@ _buildTextField(
                         docId: widget.docId, // Utile pour la modification
                       );
 
-                      // ✅ AJOUTER après await DatabaseService().saveFullConsultation(...)
-                    // Sauvegarde les rappels des médicaments avec rappelActif == true
+                    // Médecin
+                    if (_medecinNomCtrl.text.trim().isNotEmpty) {
+                      await ReferentielService.sauvegarderMedecin(
+                        nom:        _medecinNomCtrl.text.trim(),
+                        prenom:     _medecinPrenomCtrl.text.trim(),
+                        specialite: _medecinSpecialiteCtrl.text.trim(),
+                        tel:        _medecinTelCtrl.text.trim(),
+                        adresse:    _medecinAdresseCtrl.text.trim(),
+                      );
+                    }
+
+                    // Médicaments
+                    for (var med in medicaments) {
+                      if ((med['nom'] ?? '').toString().isNotEmpty) {
+                        await ReferentielService.sauvegarderMedicament(
+                          nom:      med['nom'] ?? '',
+                          molecule: med['molecule'] ?? '',
+                          dosage:   med['dosage'] ?? '',
+                        );
+                      }
+                    }
+
+                    // Types d'examens
+                    for (var ex in examens) {
+                      if ((ex['type'] ?? '').toString().isNotEmpty) {
+                        await ReferentielService.sauvegarderTypeExamen(
+                            ex['type'] ?? '');
+                      }
+                    }
                     final uid = FirebaseAuth.instance.currentUser!.uid;
                     for (var med in medicaments) {
                       if (med['rappelActif'] == true) {

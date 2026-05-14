@@ -1,3 +1,5 @@
+import 'package:carnetdesante/services/referentiel_service.dart';
+import 'package:carnetdesante/widgets/suggestion_field.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -145,31 +147,36 @@ class _AllergiesScreenState extends State<AllergiesScreen> {
   void _ajouter() => _showForm(null);
   void _modifier(int i) => _showForm(i);
 
-  void _showForm(int? index) {
-    final existing =
-        index != null ? _allergies[index] : null;
-    final nomCtrl = TextEditingController(
-        text: existing?['nomAllergie'] ?? '');
-    final dateCtrl = TextEditingController(
-        text: existing?['dateApparition'] ?? '');
+void _showForm(int? index) {
+  final existing = index != null ? _allergies[index] : null;
+  final nomCtrl = TextEditingController(
+      text: existing?['nomAllergie']?.toString() ?? '');
+  final dateCtrl = TextEditingController(
+      text: existing?['dateApparition']?.toString() ?? '');
+  bool isSaving = false;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => Padding(
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(20))),
+    // ✅ sheetCtx = contexte du bottom sheet
+    builder: (sheetCtx) => StatefulBuilder(
+      builder: (sheetCtx, setLocal) => Padding(
         padding: EdgeInsets.fromLTRB(
-            20, 20, 20,
-            MediaQuery.of(context).viewInsets.bottom + 20),
+            20,
+            20,
+            20,
+            MediaQuery.of(sheetCtx).viewInsets.bottom + 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                     color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(2)),
@@ -179,33 +186,30 @@ class _AllergiesScreenState extends State<AllergiesScreen> {
             Text(
               index == null
                   ? 'Ajouter une allergie'
-                  : 'Modifier l\'allergie',
+                  : "Modifier l'allergie",
               style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16),
+                  fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 16),
-            TextField(
+            SuggestionField(
+              label: "Nom de l'allergie",
+              icon: Icons.warning_amber_outlined,
+              color: Colors.orange,
+              collection: 'AllergiesRef',
+              displayField: 'nomAllergie',
               controller: nomCtrl,
-              decoration: InputDecoration(
-                labelText: 'Nom de l\'allergie',
-                prefixIcon: const Icon(
-                    Icons.warning_amber_outlined,
-                    color: Colors.orange),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                      color: Colors.orange, width: 1.5),
-                ),
-              ),
+              selectedData: {},
+              onSelected: (data) {
+                nomCtrl.text = data['nomAllergie'] ?? '';
+              },
+              onAutre: null,
+              showAutre: false,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: dateCtrl,
               decoration: InputDecoration(
-                labelText: 'Date d\'apparition (optionnel)',
+                labelText: "Date d'apparition (optionnel)",
                 prefixIcon: const Icon(
                     Icons.calendar_today_outlined,
                     color: Colors.orange),
@@ -229,33 +233,51 @@ class _AllergiesScreenState extends State<AllergiesScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular(12))),
-                onPressed: () async {
-                  if (nomCtrl.text.trim().isEmpty) return;
-                  final entry = {
-                    'nomAllergie': nomCtrl.text.trim(),
-                    'dateApparition': dateCtrl.text.trim(),
-                  };
-                  setState(() {
-                    if (index == null) {
-                      _allergies.add(entry);
-                    } else {
-                      _allergies[index] = entry;
-                    }
-                  });
-                  await _sauvegarder();
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
-                },
-                child: const Text('Enregistrer',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold)),
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        if (nomCtrl.text.trim().isEmpty)
+                          return;
+                        setLocal(() => isSaving = true);
+                        final entry = {
+                          'nomAllergie': nomCtrl.text.trim(),
+                          'dateApparition':
+                              dateCtrl.text.trim(),
+                        };
+                        setState(() {
+                          if (index == null) {
+                            _allergies.add(entry);
+                          } else {
+                            _allergies[index] = entry;
+                          }
+                        });
+                        await _sauvegarder();
+                        await ReferentielService
+                            .sauvegarderAllergie(
+                                nomCtrl.text.trim());
+                        // ✅ sheetCtx défini dans builder
+                        if (sheetCtx.mounted) {
+                          Navigator.pop(sheetCtx);
+                        }
+                      },
+                child: isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2))
+                    : const Text('Enregistrer',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold)),
               ),
             ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
