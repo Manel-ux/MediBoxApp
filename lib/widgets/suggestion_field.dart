@@ -12,6 +12,7 @@ class SuggestionField extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>>? onSelected;
   final VoidCallback? onAutre;
   final bool showAutre;
+  final List<String>? suggestionsLocales;
 
   const SuggestionField({
     super.key,
@@ -25,6 +26,7 @@ class SuggestionField extends StatefulWidget {
     this.onSelected,
     this.onAutre,
     this.showAutre = true,
+    this.suggestionsLocales,
   });
 
   @override
@@ -54,20 +56,86 @@ class _SuggestionFieldState extends State<SuggestionField> {
           .timeout(const Duration(seconds: 5));
 
       final q = query.toLowerCase();
+      final List<Map<String, dynamic>> resultats = [];
+
+      final firestoreDocs = snap.docs
+          .map((d) => {'_id': d.id, ...d.data()})
+          .where((d) => d.values.any(
+              (v) => v?.toString().toLowerCase().contains(q) ?? false))
+          .toList();
+      resultats.addAll(firestoreDocs);
+
+      if (widget.suggestionsLocales != null) {
+        final firestoreNoms = firestoreDocs
+            .map((d) => d[widget.displayField]?.toString().toLowerCase() ?? '')
+            .toSet();
+
+        final locales = widget.suggestionsLocales!
+            .where((s) => s.toLowerCase().contains(q))
+            .where((s) => !firestoreNoms.contains(s.toLowerCase()))
+            .map((s) => {
+                  '_id': '',
+                  '_local': true,
+                  widget.displayField: s,
+                })
+            .toList();
+        resultats.addAll(locales);
+      }
 
       // ✅ Filtre sur TOUS les champs du document, pas seulement displayField
-      _suggestions = snap.docs.map((d) => {'_id': d.id, ...d.data()}).where((d) {
-        // Cherche dans tous les champs string du document
-        return d.values.any((v) =>
-            v?.toString().toLowerCase().contains(q) ?? false);
-      }).take(8).toList();
+      // _suggestions = snap.docs.map((d) => {'_id': d.id, ...d.data()}).where((d) {
+      //   // Cherche dans tous les champs string du document
+      //   return d.values.any((v) =>
+      //       v?.toString().toLowerCase().contains(q) ?? false);
+      // }).take(8).toList();
 
       setState(() {
+        _suggestions = resultats.take(10).toList();
         _showList = true;
         _loading = false;
       });
     } catch (e) {
       debugPrint('Erreur suggestions : $e');
+      setState(() => _loading = false);
+    }
+  }
+  // ✅ Dans _SuggestionFieldState, ajoute :
+  Future<void> _chargerTout() async {
+    setState(() => _loading = true);
+    try {
+      final List<Map<String, dynamic>> resultats = [];
+      final snap = await FirebaseFirestore.instance
+          .collection(widget.collection)
+          .limit(10)
+          .get()
+          .timeout(const Duration(seconds: 5));
+
+          resultats.addAll(
+              snap.docs.map((d) => {'_id': d.id, ...d.data()}));
+
+          // Locales (les 10 premières si pas encore dans Firestore)
+          if (widget.suggestionsLocales != null) {
+            final firestoreNoms = resultats
+                .map((d) => d[widget.displayField]?.toString().toLowerCase() ?? '')
+                .toSet();
+            final locales = widget.suggestionsLocales!
+                .where((s) => !firestoreNoms.contains(s.toLowerCase()))
+                .take(10 - resultats.length)
+                .map((s) => {
+                      '_id': '',
+                      '_local': true,
+                      widget.displayField: s,
+                    })
+                .toList();
+            resultats.addAll(locales);
+          }
+
+      setState(() {
+        _suggestions = resultats;
+        _showList = _suggestions.isNotEmpty || widget.showAutre;
+        _loading = false;
+      });
+    } catch (_) {
       setState(() => _loading = false);
     }
   }
@@ -80,6 +148,11 @@ class _SuggestionFieldState extends State<SuggestionField> {
         TextField(
           controller: widget.controller,
           onChanged: _chargerSuggestions,
+          onTap: () {
+            if (widget.controller.text.isEmpty) {
+              _chargerTout();
+            }
+          },
           decoration: InputDecoration(
             labelText: widget.label,
             prefixIcon: Icon(widget.icon, color: widget.color),
@@ -133,96 +206,118 @@ class _SuggestionFieldState extends State<SuggestionField> {
                         padding: EdgeInsets.all(16),
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    else if (_suggestions.isEmpty && !widget.showAutre)
-                      Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Text(
-                          'Aucun résultat — vous pouvez saisir manuellement',
-                          style: TextStyle(
-                              color: Colors.grey[500], fontSize: 13),
-                        ),
-                      )
-                    else
-                      ..._suggestions.map((item) => InkWell(
-                            onTap: () {
-                              widget.controller.text =
-                                  item[widget.displayField]?.toString() ?? '';
-                              setState(() => _showList = false);
-                              widget.onSelected?.call(item);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                      color: Colors.grey[100]!, width: 1),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(widget.icon,
-                                      color: widget.color, size: 18),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item[widget.displayField]
-                                                  ?.toString() ??
-                                              '',
-                                          style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                        // ✅ Sous-titre avec infos supplémentaires
-                                        if (_buildSousTitre(item).isNotEmpty)
-                                          Text(
-                                            _buildSousTitre(item),
-                                            style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.grey[500]),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  Icon(Icons.north_west,
-                                      size: 14, color: Colors.grey[400]),
-                                ],
+                    // else if (_suggestions.isEmpty && !widget.showAutre)
+                    //   Padding(
+                    //     padding: const EdgeInsets.all(14),
+                    //     child: Text(
+                    //       'Aucun résultat — vous pouvez saisir manuellement',
+                    //       style: TextStyle(
+                    //           color: Colors.grey[500], fontSize: 13),
+                    //     ),
+                    //   )
+                    else ...[
+                      ..._suggestions.map((item) {
+                        final bool isLocal =
+                            item['_local'] == true;
+                        final String texte =
+                            item[widget.displayField]?.toString() ?? '';
+                        final String sousTitre =
+                            _buildSousTitre(item);
+
+                        return InkWell(
+                          onTap: () {
+                            widget.controller.text = texte;
+                            setState(() => _showList = false);
+                            widget.onSelected?.call(item);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 11),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                    color: Colors.grey[100]!, width: 1),
                               ),
                             ),
-                          )),
+                            child: Row(
+                              children: [
+                                Icon(widget.icon,
+                                    color: isLocal
+                                        ? widget.color.withOpacity(0.5)
+                                        : widget.color,
+                                    size: 18),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(texte,
+                                          style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500)),
+                                      if (sousTitre.isNotEmpty)
+                                        Text(sousTitre,
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey[500])),
+                                    ],
+                                  ),
+                                ),
+                                if (isLocal)
+                                  // ✅ Badge "Suggestion" pour les locales
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: widget.color.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text('Suggestion',
+                                        style: TextStyle(
+                                            fontSize: 9,
+                                            color: widget.color,
+                                            fontWeight: FontWeight.w600)),
+                                  )
+                                else
+                                  Icon(Icons.north_west,
+                                      size: 14,
+                                      color: Colors.grey[400]),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
 
-                    // ✅ Option "Autre / Nouveau"
-                    if (widget.showAutre) ...[
-                      if (_suggestions.isNotEmpty)
-                        Divider(height: 1, color: Colors.grey[200]),
-                      InkWell(
-                        onTap: () {
-                          setState(() => _showList = false);
-                          widget.onAutre?.call();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          child: Row(
-                            children: [
-                              Icon(Icons.add_circle_outline,
-                                  color: widget.color, size: 18),
-                              const SizedBox(width: 12),
-                              Text(
-                                '+ Nouveau (saisir manuellement)',
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    color: widget.color,
-                                    fontWeight: FontWeight.w600),
-                              ),
-                            ],
+                      // ── Option Autre ──────────────────
+                      if (widget.showAutre) ...[
+                        if (_suggestions.isNotEmpty)
+                          Divider(height: 1, color: Colors.grey[200]),
+                        InkWell(
+                          onTap: () {
+                            setState(() => _showList = false);
+                            widget.onAutre?.call();
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            child: Row(
+                              children: [
+                                Icon(Icons.add_circle_outline,
+                                    color: widget.color, size: 18),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Autre (saisir manuellement)',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      color: widget.color,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ],
                 ),
@@ -247,11 +342,11 @@ class _SuggestionFieldState extends State<SuggestionField> {
   if (dosage.isNotEmpty) parts.add(dosage);
 
   // ✅ Correction : deux conditions séparées
-  final prenom = item['prenom']?.toString() ?? '';
-  final nom = item['nom']?.toString() ?? '';
-  if (prenom.isNotEmpty && nom.isNotEmpty) {
-    parts.add('$prenom $nom');
-  }
+  // final prenom = item['prenom']?.toString() ?? '';
+  // final nom = item['nom']?.toString() ?? '';
+  // if (prenom.isNotEmpty && nom.isNotEmpty) {
+  //   parts.add('$prenom $nom');
+  // }
 
   return parts.join(' • ');
 }

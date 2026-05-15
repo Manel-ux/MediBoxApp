@@ -270,10 +270,13 @@ class _MedicalFormOverlayState extends State<MedicalFormOverlay> {
             displayField: 'nomAllergie',
             controller: TextEditingController(text: allergy.nomAllergie),
             selectedData: {},
+            suggestionsLocales: ReferentielService.allergiesPredefines,
             onSelected: (data) {
-              setState(() => allergy.nomAllergie = data['nomAllergie'] ?? '');
+              setState(() => allergy.nomAllergie =
+                  data['nomAllergie']?.toString() ?? '');
             },
-            showAutre: false,
+            showAutre: true,
+            onAutre: null,
           ),
           const SizedBox(height: 8),
           TextField(
@@ -322,10 +325,13 @@ class _MedicalFormOverlayState extends State<MedicalFormOverlay> {
             displayField: 'nomMaladie',
             controller: TextEditingController(text: maladie.nomMaladie),
             selectedData: {},
+            suggestionsLocales: ReferentielService.maladiesPredefines,
             onSelected: (data) {
-              setState(() => maladie.nomMaladie = data['nomMaladie'] ?? '');
+              setState(() => maladie.nomMaladie =
+                  data['nomMaladie']?.toString() ?? '');
             },
-            showAutre: false,
+            showAutre: true,
+            onAutre: null,
           ),
           if (maladie.nomMaladie.isNotEmpty) ...[
             const SizedBox(height: 14),
@@ -644,6 +650,7 @@ class _MedicalFormOverlayState extends State<MedicalFormOverlay> {
               notifIds.add(id);
             }
 
+            // ✅ 5. Sauvegarde le rappel dans Rappels/Medicaments
             await FirebaseFirestore.instance
                 .collection('Rappels')
                 .doc(uid)

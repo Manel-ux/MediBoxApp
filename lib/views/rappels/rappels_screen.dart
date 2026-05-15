@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_final_fields, curly_braces_in_flow_control_structures, unnecessary_underscores
 
 import 'package:carnetdesante/services/notification_service.dart';
+import 'package:carnetdesante/widgets/suggestion_field.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -2353,12 +2354,21 @@ class _FormulaireRdv extends StatefulWidget {
 
 class _FormulaireRdvState extends State<_FormulaireRdv> {
   static const Color primary = Color(0xFF1BC2AB);
-  final _medecinCtrl = TextEditingController();
-  final _motifCtrl = TextEditingController();
-  final _lieuCtrl = TextEditingController();
+  // final _medecinCtrl = TextEditingController();
+  var _motifCtrl = TextEditingController();
+  var _lieuCtrl = TextEditingController();
   DateTime? _dateRdv;
   TimeOfDay? _heureRdv;
   bool _isSaving = false;
+  late TextEditingController _medecinCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _medecinCtrl = TextEditingController();
+    _motifCtrl   = TextEditingController();
+    _lieuCtrl    = TextEditingController();
+  }
 
   @override
   void dispose() {
@@ -2449,10 +2459,26 @@ class _FormulaireRdvState extends State<_FormulaireRdv> {
                     fontWeight: FontWeight.bold,
                     fontSize: 16)),
             const SizedBox(height: 16),
-            _Field(
-                ctrl: _medecinCtrl,
-                label: 'Médecin (optionnel)',
-                icon: Icons.person_outline),
+            SuggestionField(
+              label: 'Médecin (optionnel)',
+              icon: Icons.person_outline,
+              color: const Color(0xFF1BC2AB),
+              collection: 'Medecins',
+              displayField: 'nomComplet',
+              controller: _medecinCtrl,
+              selectedData: {},
+              onSelected: (data) {
+                _medecinCtrl.text =
+                    '${data['prenom'] ?? ''} ${data['nom'] ?? ''}'.trim();
+              final adresse = data['adresse']?.toString() ?? '';
+                if (adresse.isNotEmpty) {
+                  _lieuCtrl.text = adresse;
+                }
+              },
+              
+              showAutre: true,
+              onAutre: () => _medecinCtrl.clear(),
+            ),
             _Field(
                 ctrl: _motifCtrl,
                 label: 'Motif (optionnel)',
@@ -2698,10 +2724,26 @@ class _ModifierRappelRdvState
                       fontSize: 16)),
             ]),
             const SizedBox(height: 16),
-            _Field(
-                ctrl: _medecinCtrl,
-                label: 'Médecin (optionnel)',
-                icon: Icons.person_outline),
+            // ✅ Même SuggestionField que ci-dessus
+            SuggestionField(
+              label: 'Médecin (optionnel)',
+              icon: Icons.person_outline,
+              color: const Color(0xFF1BC2AB),
+              collection: 'Medecins',
+              displayField: 'nomComplet',
+              controller: _medecinCtrl,
+              selectedData: {},
+              onSelected: (data) {
+                _medecinCtrl.text =
+                    '${data['prenom'] ?? ''} ${data['nom'] ?? ''}'.trim();
+              final adresse = data['adresse']?.toString() ?? '';
+                if (adresse.isNotEmpty) {
+                  setState(() => _lieuCtrl.text = adresse);
+                }
+              },
+              showAutre: true,
+              onAutre: () => _medecinCtrl.clear(),
+            ),
             _Field(
                 ctrl: _motifCtrl,
                 label: 'Motif (optionnel)',

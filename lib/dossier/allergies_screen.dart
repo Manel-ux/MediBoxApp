@@ -199,11 +199,12 @@ void _showForm(int? index) {
               displayField: 'nomAllergie',
               controller: nomCtrl,
               selectedData: {},
+              suggestionsLocales: ReferentielService.allergiesPredefines,
               onSelected: (data) {
                 nomCtrl.text = data['nomAllergie'] ?? '';
               },
-              onAutre: null,
-              showAutre: false,
+              showAutre: true,
+              onAutre: () => nomCtrl.clear(),
             ),
             const SizedBox(height: 12),
             TextField(

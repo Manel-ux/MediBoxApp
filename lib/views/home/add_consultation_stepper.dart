@@ -660,12 +660,34 @@ void dispose() {
                   child: Column(
                     children: [
                       // Nom
-                      _buildCleanField(
-                        controller: controllers['nom']!,
-                        hint: "Nom du médicament",
+                      SuggestionField(
+                        label: 'Nom du médicament',
                         icon: Icons.medication_outlined,
-                        iconColor: color,
-                        onChanged: (v) => med['nom'] = v,
+                        color: color,
+                        collection: 'Medicaments',
+                        displayField: 'nom',
+                        controller: controllers['nom']!,
+                        selectedData: {},
+                        onSelected: (data) {
+                          setState(() {
+                            controllers['nom']!.text      = data['nom']?.toString()      ?? '';
+                            controllers['molecule']!.text = data['molecule']?.toString() ?? '';
+                            controllers['dosage']!.text   = data['dosage']?.toString()   ?? '';
+                            med['nom']      = controllers['nom']!.text;
+                            med['molecule'] = controllers['molecule']!.text;
+                            med['dosage']   = controllers['dosage']!.text;
+                          });
+                        },
+                        showAutre: true,
+                        onAutre: () {
+                          // Vide les champs pour saisie manuelle
+                          controllers['nom']!.clear();
+                          controllers['molecule']!.clear();
+                          controllers['dosage']!.clear();
+                          med['nom']      = '';
+                          med['molecule'] = '';
+                          med['dosage']   = '';
+                        },
                       ),
                       const SizedBox(height: 10),
                       // Molécule
@@ -914,13 +936,18 @@ void dispose() {
                   displayField: 'type',
                   controller: _examenTypeControllers[index],
                   selectedData: {},
+                  suggestionsLocales: ReferentielService.typesExamenPredefines,
                   onSelected: (data) {
                     setState(() {
-                      examens[index]['type'] = data['type'] ?? '';
-                      _examenTypeControllers[index].text = data['type'] ?? '';
+                      examens[index]['type'] = data['type']?.toString() ?? '';
+                      _examenTypeControllers[index].text = data['type']?.toString() ?? '';
                     });
                   },
-                  showAutre: false,
+                  showAutre: true,
+                  onAutre: () {
+                    _examenTypeControllers[index].clear();
+                    examens[index]['type'] = '';
+                  },
                 ),
                 const SizedBox(height: 10),
                 // Date

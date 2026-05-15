@@ -3,6 +3,66 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ReferentielService {
   static final _db = FirebaseFirestore.instance;
 
+  static const List<String> allergiesPredefines = [
+    'Pénicilline', 'Aspirine', 'Ibuprofène', 'Amoxicilline',
+    'Sulfamides', 'Codéine', 'Morphine', 'Tétracyclines',
+    'Latex', 'Arachides', 'Fruits à coque', 'Lait de vache',
+    'Œufs', 'Gluten', 'Fruits de mer', 'Soja',
+    'Pollen', 'Acariens', 'Poils d\'animaux', 'Moisissures',
+    'Nickel', 'Parfums', 'Colorants', 'Conservateurs',
+    'Venin d\'abeille', 'Venin de guêpe', 'Iode',
+  ];
+
+  static const List<String> maladiesPredefines = [
+    'Diabète type 1', 'Diabète type 2', 'Hypertension artérielle',
+    'Asthme', 'Bronchite chronique', 'BPCO',
+    'Insuffisance cardiaque', 'Coronaropathie', 'Arythmie',
+    'Hypothyroïdie', 'Hyperthyroïdie', 'Insuffisance rénale chronique',
+    'Insuffisance hépatique', 'Cirrhose', 'Hépatite chronique',
+    'Arthrose', 'Polyarthrite rhumatoïde', 'Lupus',
+    'Épilepsie', 'Maladie de Parkinson', 'Sclérose en plaques',
+    'Dépression chronique', 'Schizophrénie', 'Trouble bipolaire',
+    'Anémie chronique', 'Drépanocytose', 'Thalassémie',
+    'Psoriasis', 'Eczéma chronique', 'Vitiligo',
+    'Glaucome', 'DMLA', 'Cataracte',
+    'Reflux gastro-œsophagien', 'Maladie de Crohn', 'Rectocolite',
+    'Migraine chronique', 'Fibromyalgie', 'Ostéoporose',
+  ];
+
+  static const List<String> typesExamenPredefines = [
+    // Biologie
+    'Numération formule sanguine (NFS)',
+    'Glycémie à jeun', 'HbA1c', 'Bilan lipidique',
+    'Créatinémie', 'Urée', 'Ionogramme sanguin',
+    'Bilan hépatique (ASAT/ALAT)', 'Albumine', 'Protéines totales',
+    'TSH', 'T4 libre', 'T3 libre',
+    'CRP', 'VS', 'Fibrinogène',
+    'Groupe sanguin', 'Sérologie VIH', 'Sérologie hépatite B/C',
+    'ECBU (examen cytobactériologique des urines)',
+    'Coproculture', 'Hémoculture',
+    'PSA (antigène prostatique spécifique)',
+    'Bêta-HCG (test de grossesse)',
+    'Ferritine', 'Fer sérique', 'Acide folique', 'Vitamine B12',
+    'Vitamine D', 'Calcium', 'Phosphore', 'Magnésium',
+    // Imagerie
+    'Radiographie thoracique', 'Radiographie des membres',
+    'Radiographie du rachis', 'Radiographie abdominale',
+    'Échographie abdominale', 'Échographie pelvienne',
+    'Échographie cardiaque (échocardiographie)',
+    'Échographie thyroïdienne', 'Échographie des membres',
+    'Scanner (TDM) thoracique', 'Scanner abdominal', 'Scanner cérébral',
+    'IRM cérébrale', 'IRM rachis', 'IRM articulaire',
+    'Scintigraphie osseuse', 'Densitométrie osseuse (ostéodensitométrie)',
+    'Mammographie',
+    // Fonctionnel
+    'Électrocardiogramme (ECG)', 'Holter ECG',
+    'Épreuve d\'effort', 'Spirométrie (EFR)',
+    'Électroencéphalogramme (EEG)',
+    'Électromyogramme (EMG)',
+    'Endoscopie digestive haute', 'Coloscopie',
+    'Fibroscopie bronchique',
+    'Fond d\'œil', 'Champ visuel',
+  ];
   // ── Médecin ───────────────────────────────────────────
   static Future<void> sauvegarderMedecin({
     required String nom,

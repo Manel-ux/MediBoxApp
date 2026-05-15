@@ -224,11 +224,12 @@ void _ajouterMaladie() {
               displayField: 'nomMaladie',
               controller: ctrl,
               selectedData: {},
+              suggestionsLocales: ReferentielService.maladiesPredefines,
               onSelected: (data) {
-                ctrl.text = data['nomMaladie'] ?? '';
+                ctrl.text = data['nomMaladie']?.toString() ?? '';
               },
-              onAutre: null,
-              showAutre: false,
+              showAutre: true,
+              onAutre: () => ctrl.clear(),
             ),
             const SizedBox(height: 20),
             SizedBox(
