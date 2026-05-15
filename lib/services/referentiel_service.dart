@@ -13,6 +13,128 @@ class ReferentielService {
     'Venin d\'abeille', 'Venin de guêpe', 'Iode',
   ];
 
+  static const List<Map<String, String>> medicamentsPredefinis = [
+  // ── Analgésiques / Anti-inflammatoires ────────────────
+  {'nom': 'Paracétamol',        'molecule': 'Paracétamol',         'dosage': '500mg'},
+  {'nom': 'Paracétamol',        'molecule': 'Paracétamol',         'dosage': '1000mg'},
+  {'nom': 'Ibuprofène',         'molecule': 'Ibuprofène',          'dosage': '400mg'},
+  {'nom': 'Ibuprofène',         'molecule': 'Ibuprofène',          'dosage': '600mg'},
+  {'nom': 'Aspirine',           'molecule': 'Acide acétylsalicylique', 'dosage': '500mg'},
+  {'nom': 'Aspirine cardio',    'molecule': 'Acide acétylsalicylique', 'dosage': '100mg'},
+  {'nom': 'Diclofénac',         'molecule': 'Diclofénac sodique',  'dosage': '50mg'},
+  {'nom': 'Kétoprofène',        'molecule': 'Kétoprofène',         'dosage': '100mg'},
+  {'nom': 'Naproxène',          'molecule': 'Naproxène sodique',   'dosage': '550mg'},
+  {'nom': 'Tramadol',           'molecule': 'Tramadol chlorhydrate','dosage': '50mg'},
+  {'nom': 'Codéine',            'molecule': 'Phosphate de codéine','dosage': '30mg'},
+  {'nom': 'Morphine',           'molecule': 'Sulfate de morphine', 'dosage': '10mg'},
+
+  // ── Antibiotiques ─────────────────────────────────────
+  {'nom': 'Amoxicilline',       'molecule': 'Amoxicilline',        'dosage': '500mg'},
+  {'nom': 'Amoxicilline',       'molecule': 'Amoxicilline',        'dosage': '1000mg'},
+  {'nom': 'Augmentin',          'molecule': 'Amoxicilline + Acide clavulanique', 'dosage': '875mg/125mg'},
+  {'nom': 'Azithromycine',      'molecule': 'Azithromycine',       'dosage': '500mg'},
+  {'nom': 'Clarithromycine',    'molecule': 'Clarithromycine',     'dosage': '500mg'},
+  {'nom': 'Ciprofloxacine',     'molecule': 'Ciprofloxacine',      'dosage': '500mg'},
+  {'nom': 'Doxycycline',        'molecule': 'Doxycycline',         'dosage': '100mg'},
+  {'nom': 'Métronidazole',      'molecule': 'Métronidazole',       'dosage': '500mg'},
+  {'nom': 'Céfixime',           'molecule': 'Céfixime',            'dosage': '400mg'},
+  {'nom': 'Cotrimoxazole',      'molecule': 'Triméthoprime + Sulfaméthoxazole', 'dosage': '960mg'},
+
+  // ── Cardiovasculaires ──────────────────────────────────
+  {'nom': 'Amlodipine',         'molecule': 'Amlodipine',          'dosage': '5mg'},
+  {'nom': 'Amlodipine',         'molecule': 'Amlodipine',          'dosage': '10mg'},
+  {'nom': 'Ramipril',           'molecule': 'Ramipril',            'dosage': '5mg'},
+  {'nom': 'Lisinopril',         'molecule': 'Lisinopril',          'dosage': '10mg'},
+  {'nom': 'Losartan',           'molecule': 'Losartan potassique', 'dosage': '50mg'},
+  {'nom': 'Valsartan',          'molecule': 'Valsartan',           'dosage': '160mg'},
+  {'nom': 'Bisoprolol',         'molecule': 'Bisoprolol fumarate', 'dosage': '5mg'},
+  {'nom': 'Aténolol',           'molecule': 'Aténolol',            'dosage': '50mg'},
+  {'nom': 'Métoprolol',         'molecule': 'Métoprolol tartrate', 'dosage': '50mg'},
+  {'nom': 'Furosémide',         'molecule': 'Furosémide',          'dosage': '40mg'},
+  {'nom': 'Hydrochlorothiazide','molecule': 'Hydrochlorothiazide', 'dosage': '25mg'},
+  {'nom': 'Spironolactone',     'molecule': 'Spironolactone',      'dosage': '25mg'},
+  {'nom': 'Atorvastatine',      'molecule': 'Atorvastatine calcique','dosage': '20mg'},
+  {'nom': 'Rosuvastatine',      'molecule': 'Rosuvastatine',       'dosage': '10mg'},
+  {'nom': 'Simvastatine',       'molecule': 'Simvastatine',        'dosage': '20mg'},
+  {'nom': 'Clopidogrel',        'molecule': 'Clopidogrel',         'dosage': '75mg'},
+  {'nom': 'Digoxine',           'molecule': 'Digoxine',            'dosage': '0,25mg'},
+  {'nom': 'Nitroglycérine',     'molecule': 'Trinitrate de glycéryle','dosage': '0,5mg'},
+
+  // ── Diabète ───────────────────────────────────────────
+  {'nom': 'Metformine',         'molecule': 'Metformine chlorhydrate','dosage': '500mg'},
+  {'nom': 'Metformine',         'molecule': 'Metformine chlorhydrate','dosage': '1000mg'},
+  {'nom': 'Glibenclamide',      'molecule': 'Glibenclamide',       'dosage': '5mg'},
+  {'nom': 'Gliclazide',         'molecule': 'Gliclazide',          'dosage': '80mg'},
+  {'nom': 'Sitagliptine',       'molecule': 'Sitagliptine',        'dosage': '100mg'},
+  {'nom': 'Insuline rapide',    'molecule': 'Insuline humaine',    'dosage': '100 UI/mL'},
+  {'nom': 'Insuline lente',     'molecule': 'Insuline glargine',   'dosage': '100 UI/mL'},
+
+  // ── Respiratoire ──────────────────────────────────────
+  {'nom': 'Salbutamol',         'molecule': 'Salbutamol',          'dosage': '100µg/dose'},
+  {'nom': 'Béclométasone',      'molecule': 'Béclométasone dipropionate','dosage': '250µg/dose'},
+  {'nom': 'Fluticasone',        'molecule': 'Propionate de fluticasone','dosage': '125µg/dose'},
+  {'nom': 'Montélukast',        'molecule': 'Montélukast sodique', 'dosage': '10mg'},
+  {'nom': 'Tiotropium',         'molecule': 'Tiotropium',          'dosage': '18µg'},
+  {'nom': 'Prednisolone',       'molecule': 'Prednisolone',        'dosage': '5mg'},
+  {'nom': 'Prednisolone',       'molecule': 'Prednisolone',        'dosage': '20mg'},
+
+  // ── Gastro-entérologie ────────────────────────────────
+  {'nom': 'Oméprazole',         'molecule': 'Oméprazole',          'dosage': '20mg'},
+  {'nom': 'Oméprazole',         'molecule': 'Oméprazole',          'dosage': '40mg'},
+  {'nom': 'Pantoprazole',       'molecule': 'Pantoprazole',        'dosage': '40mg'},
+  {'nom': 'Ranitidine',         'molecule': 'Ranitidine',          'dosage': '150mg'},
+  {'nom': 'Dompéridone',        'molecule': 'Dompéridone',         'dosage': '10mg'},
+  {'nom': 'Métoclopramide',     'molecule': 'Métoclopramide',      'dosage': '10mg'},
+  {'nom': 'Lopéramide',         'molecule': 'Lopéramide',          'dosage': '2mg'},
+  {'nom': 'Hyoscine',           'molecule': 'Butylscopolamine',    'dosage': '10mg'},
+  {'nom': 'Lactulose',          'molecule': 'Lactulose',           'dosage': '10g/15mL'},
+
+  // ── Thyroïde ──────────────────────────────────────────
+  {'nom': 'Lévothyroxine',      'molecule': 'Lévothyroxine sodique','dosage': '50µg'},
+  {'nom': 'Lévothyroxine',      'molecule': 'Lévothyroxine sodique','dosage': '100µg'},
+  {'nom': 'Carbimazole',        'molecule': 'Carbimazole',         'dosage': '5mg'},
+
+  // ── Neurologie / Psychiatrie ──────────────────────────
+  {'nom': 'Sertraline',         'molecule': 'Sertraline',          'dosage': '50mg'},
+  {'nom': 'Fluoxétine',         'molecule': 'Fluoxétine',          'dosage': '20mg'},
+  {'nom': 'Amitriptyline',      'molecule': 'Amitriptyline',       'dosage': '25mg'},
+  {'nom': 'Alprazolam',         'molecule': 'Alprazolam',          'dosage': '0,25mg'},
+  {'nom': 'Diazépam',           'molecule': 'Diazépam',            'dosage': '5mg'},
+  {'nom': 'Zolpidem',           'molecule': 'Zolpidem tartrate',   'dosage': '10mg'},
+  {'nom': 'Carbamazépine',      'molecule': 'Carbamazépine',       'dosage': '200mg'},
+  {'nom': 'Valproate',          'molecule': 'Acide valproïque',    'dosage': '500mg'},
+  {'nom': 'Lévétiracétam',      'molecule': 'Lévétiracétam',      'dosage': '500mg'},
+  {'nom': 'Halopéridol',        'molecule': 'Halopéridol',         'dosage': '5mg'},
+
+  // ── Vitamines / Compléments ───────────────────────────
+  {'nom': 'Vitamine D3',        'molecule': 'Cholécalciférol',     'dosage': '1000 UI'},
+  {'nom': 'Vitamine B12',       'molecule': 'Cyanocobalamine',     'dosage': '1000µg'},
+  {'nom': 'Acide folique',      'molecule': 'Acide folique',       'dosage': '5mg'},
+  {'nom': 'Fer',                'molecule': 'Sulfate ferreux',     'dosage': '80mg'},
+  {'nom': 'Calcium',            'molecule': 'Carbonate de calcium','dosage': '500mg'},
+  {'nom': 'Magnésium',          'molecule': 'Oxyde de magnésium',  'dosage': '300mg'},
+  {'nom': 'Zinc',               'molecule': 'Gluconate de zinc',   'dosage': '15mg'},
+
+  // ── Antihistaminiques ─────────────────────────────────
+  {'nom': 'Cétirizine',         'molecule': 'Cétirizine',          'dosage': '10mg'},
+  {'nom': 'Loratadine',         'molecule': 'Loratadine',          'dosage': '10mg'},
+  {'nom': 'Desloratadine',      'molecule': 'Desloratadine',       'dosage': '5mg'},
+  {'nom': 'Hydroxyzine',        'molecule': 'Hydroxyzine',         'dosage': '25mg'},
+
+  // ── Dermatologie ──────────────────────────────────────
+  {'nom': 'Bétaméthasone',      'molecule': 'Dipropionate de bétaméthasone','dosage': '0,05%'},
+  {'nom': 'Hydrocortisone',     'molecule': 'Hydrocortisone',      'dosage': '1%'},
+  {'nom': 'Kétoconazole',       'molecule': 'Kétoconazole',        'dosage': '200mg'},
+  {'nom': 'Fluconazole',        'molecule': 'Fluconazole',         'dosage': '150mg'},
+  {'nom': 'Terbinafine',        'molecule': 'Terbinafine',         'dosage': '250mg'},
+
+  // ── Rhumatologie / Ostéoporose ────────────────────────
+  {'nom': 'Alendronate',        'molecule': 'Alendronate sodique', 'dosage': '70mg'},
+  {'nom': 'Colchicine',         'molecule': 'Colchicine',          'dosage': '1mg'},
+  {'nom': 'Allopurinol',        'molecule': 'Allopurinol',         'dosage': '300mg'},
+  {'nom': 'Hydroxychloroquine', 'molecule': 'Hydroxychloroquine',  'dosage': '200mg'},
+];
+
   static const List<String> maladiesPredefines = [
     'Diabète type 1', 'Diabète type 2', 'Hypertension artérielle',
     'Asthme', 'Bronchite chronique', 'BPCO',

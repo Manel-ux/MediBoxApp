@@ -1,3 +1,4 @@
+import 'package:carnetdesante/services/init_referentiel.dart';
 import 'package:carnetdesante/views/auth/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ void main() async {
   tz.initializeTimeZones();
   await NotificationService().init();
   await initializeDateFormatting('fr_FR', null);
+  InitReferentiel.initialiserSiVide();
   runApp(const MyApp());
 }
 

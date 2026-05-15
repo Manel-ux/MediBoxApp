@@ -13,6 +13,7 @@ class SuggestionField extends StatefulWidget {
   final VoidCallback? onAutre;
   final bool showAutre;
   final List<String>? suggestionsLocales;
+  final List<Map<String, String>>? suggestionsLocalesMap;
 
   const SuggestionField({
     super.key,
@@ -27,6 +28,7 @@ class SuggestionField extends StatefulWidget {
     this.onAutre,
     this.showAutre = true,
     this.suggestionsLocales,
+    this.suggestionsLocalesMap,
   });
 
   @override
@@ -38,8 +40,58 @@ class _SuggestionFieldState extends State<SuggestionField> {
   bool _showList = false;
   bool _loading = false;
 
+  // ✅ Helper : fusionne Firestore + locales String
+  List<Map<String, dynamic>> _fusionnerLocalesString(
+    List<Map<String, dynamic>> firestoreDocs,
+    int maxTotal,
+  ) {
+    if (widget.suggestionsLocales == null) return [];
+    final firestoreNoms = firestoreDocs
+        .map((d) => d[widget.displayField]?.toString().toLowerCase() ?? '')
+        .toSet();
+    return widget.suggestionsLocales!
+        .where((s) => !firestoreNoms.contains(s.toLowerCase()))
+        .take((maxTotal - firestoreDocs.length).clamp(0, maxTotal))
+        .map((s) => {
+              '_id': '',
+              '_local': true,
+              widget.displayField: s,
+            })
+        .toList();
+  }
+
+  // ✅ Helper : fusionne Firestore + locales Map (médicaments)
+  List<Map<String, dynamic>> _fusionnerLocalesMap(
+    List<Map<String, dynamic>> firestoreDocs,
+    int maxTotal, {
+    String filtreQuery = '',
+  }) {
+    if (widget.suggestionsLocalesMap == null) return [];
+    final firestoreNoms = firestoreDocs
+        .map((d) => d['nom']?.toString().toLowerCase() ?? '')
+        .toSet();
+    return widget.suggestionsLocalesMap!
+        .where((m) {
+          if (filtreQuery.isEmpty) return true;
+          final q = filtreQuery.toLowerCase();
+          return (m['nom'] ?? '').toLowerCase().contains(q) ||
+              (m['molecule'] ?? '').toLowerCase().contains(q);
+        })
+        .where((m) =>
+            !firestoreNoms.contains((m['nom'] ?? '').toLowerCase()))
+        .take((maxTotal - firestoreDocs.length).clamp(0, maxTotal))
+        .map((m) => {
+              '_id': '',
+              '_local': true,
+              'nom': m['nom'] ?? '',
+              'molecule': m['molecule'] ?? '',
+              'dosage': m['dosage'] ?? '',
+              widget.displayField: m['nom'] ?? '',
+            })
+        .toList();
+  }
+
   Future<void> _chargerSuggestions(String query) async {
-    // ✅ Affiche la liste dès la première lettre
     if (query.isEmpty) {
       setState(() {
         _showList = false;
@@ -47,7 +99,6 @@ class _SuggestionFieldState extends State<SuggestionField> {
       });
       return;
     }
-
     setState(() => _loading = true);
     try {
       final snap = await FirebaseFirestore.instance
@@ -56,38 +107,28 @@ class _SuggestionFieldState extends State<SuggestionField> {
           .timeout(const Duration(seconds: 5));
 
       final q = query.toLowerCase();
-      final List<Map<String, dynamic>> resultats = [];
 
+      // 1. Firestore filtré
       final firestoreDocs = snap.docs
           .map((d) => {'_id': d.id, ...d.data()})
           .where((d) => d.values.any(
               (v) => v?.toString().toLowerCase().contains(q) ?? false))
           .toList();
-      resultats.addAll(firestoreDocs);
 
-      if (widget.suggestionsLocales != null) {
-        final firestoreNoms = firestoreDocs
-            .map((d) => d[widget.displayField]?.toString().toLowerCase() ?? '')
-            .toSet();
+      final List<Map<String, dynamic>> resultats = [...firestoreDocs];
 
-        final locales = widget.suggestionsLocales!
-            .where((s) => s.toLowerCase().contains(q))
-            .where((s) => !firestoreNoms.contains(s.toLowerCase()))
-            .map((s) => {
-                  '_id': '',
-                  '_local': true,
-                  widget.displayField: s,
-                })
-            .toList();
-        resultats.addAll(locales);
-      }
+      // 2. Locales Map (médicaments)
+      resultats.addAll(
+          _fusionnerLocalesMap(firestoreDocs, 10, filtreQuery: query));
 
-      // ✅ Filtre sur TOUS les champs du document, pas seulement displayField
-      // _suggestions = snap.docs.map((d) => {'_id': d.id, ...d.data()}).where((d) {
-      //   // Cherche dans tous les champs string du document
-      //   return d.values.any((v) =>
-      //       v?.toString().toLowerCase().contains(q) ?? false);
-      // }).take(8).toList();
+      // 3. Locales String (allergies / maladies / examens)
+      resultats.addAll(_fusionnerLocalesString(firestoreDocs, 10)
+          .where((item) =>
+              (item[widget.displayField] ?? '')
+                  .toString()
+                  .toLowerCase()
+                  .contains(q))
+          .toList());
 
       setState(() {
         _suggestions = resultats.take(10).toList();
@@ -99,40 +140,31 @@ class _SuggestionFieldState extends State<SuggestionField> {
       setState(() => _loading = false);
     }
   }
-  // ✅ Dans _SuggestionFieldState, ajoute :
+
   Future<void> _chargerTout() async {
     setState(() => _loading = true);
     try {
-      final List<Map<String, dynamic>> resultats = [];
+      // 1. Firestore
       final snap = await FirebaseFirestore.instance
           .collection(widget.collection)
           .limit(10)
           .get()
           .timeout(const Duration(seconds: 5));
 
-          resultats.addAll(
-              snap.docs.map((d) => {'_id': d.id, ...d.data()}));
+      final firestoreDocs =
+          snap.docs.map((d) => {'_id': d.id, ...d.data()}).toList();
 
-          // Locales (les 10 premières si pas encore dans Firestore)
-          if (widget.suggestionsLocales != null) {
-            final firestoreNoms = resultats
-                .map((d) => d[widget.displayField]?.toString().toLowerCase() ?? '')
-                .toSet();
-            final locales = widget.suggestionsLocales!
-                .where((s) => !firestoreNoms.contains(s.toLowerCase()))
-                .take(10 - resultats.length)
-                .map((s) => {
-                      '_id': '',
-                      '_local': true,
-                      widget.displayField: s,
-                    })
-                .toList();
-            resultats.addAll(locales);
-          }
+      final List<Map<String, dynamic>> resultats = [...firestoreDocs];
+
+      // 2. Locales Map (médicaments)
+      resultats.addAll(_fusionnerLocalesMap(firestoreDocs, 10));
+
+      // 3. Locales String (allergies / maladies / examens)
+      resultats.addAll(_fusionnerLocalesString(firestoreDocs, 10));
 
       setState(() {
-        _suggestions = resultats;
-        _showList = _suggestions.isNotEmpty || widget.showAutre;
+        _suggestions = resultats.take(10).toList();
+        _showList = resultats.isNotEmpty || widget.showAutre;
         _loading = false;
       });
     } catch (_) {
@@ -149,9 +181,7 @@ class _SuggestionFieldState extends State<SuggestionField> {
           controller: widget.controller,
           onChanged: _chargerSuggestions,
           onTap: () {
-            if (widget.controller.text.isEmpty) {
-              _chargerTout();
-            }
+            if (widget.controller.text.isEmpty) _chargerTout();
           },
           decoration: InputDecoration(
             labelText: widget.label,
@@ -177,11 +207,10 @@ class _SuggestionFieldState extends State<SuggestionField> {
           ),
         ),
 
-        // ✅ Liste déroulante
         if (_showList)
           Container(
             margin: const EdgeInsets.only(top: 4),
-            constraints: const BoxConstraints(maxHeight: 250),
+            constraints: const BoxConstraints(maxHeight: 280),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -200,29 +229,18 @@ class _SuggestionFieldState extends State<SuggestionField> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // ✅ Résultats trouvés
                     if (_loading)
                       const Padding(
                         padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child:
+                            CircularProgressIndicator(strokeWidth: 2),
                       )
-                    // else if (_suggestions.isEmpty && !widget.showAutre)
-                    //   Padding(
-                    //     padding: const EdgeInsets.all(14),
-                    //     child: Text(
-                    //       'Aucun résultat — vous pouvez saisir manuellement',
-                    //       style: TextStyle(
-                    //           color: Colors.grey[500], fontSize: 13),
-                    //     ),
-                    //   )
                     else ...[
                       ..._suggestions.map((item) {
-                        final bool isLocal =
-                            item['_local'] == true;
+                        final bool isLocal = item['_local'] == true;
                         final String texte =
                             item[widget.displayField]?.toString() ?? '';
-                        final String sousTitre =
-                            _buildSousTitre(item);
+                        final String sousTitre = _buildSousTitre(item);
 
                         return InkWell(
                           onTap: () {
@@ -255,7 +273,8 @@ class _SuggestionFieldState extends State<SuggestionField> {
                                       Text(texte,
                                           style: const TextStyle(
                                               fontSize: 14,
-                                              fontWeight: FontWeight.w500)),
+                                              fontWeight:
+                                                  FontWeight.w500)),
                                       if (sousTitre.isNotEmpty)
                                         Text(sousTitre,
                                             style: TextStyle(
@@ -265,19 +284,21 @@ class _SuggestionFieldState extends State<SuggestionField> {
                                   ),
                                 ),
                                 if (isLocal)
-                                  // ✅ Badge "Suggestion" pour les locales
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: widget.color.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(4),
+                                      color:
+                                          widget.color.withOpacity(0.1),
+                                      borderRadius:
+                                          BorderRadius.circular(4),
                                     ),
                                     child: Text('Suggestion',
                                         style: TextStyle(
                                             fontSize: 9,
                                             color: widget.color,
-                                            fontWeight: FontWeight.w600)),
+                                            fontWeight:
+                                                FontWeight.w600)),
                                   )
                                 else
                                   Icon(Icons.north_west,
@@ -289,7 +310,6 @@ class _SuggestionFieldState extends State<SuggestionField> {
                         );
                       }),
 
-                      // ── Option Autre ──────────────────
                       if (widget.showAutre) ...[
                         if (_suggestions.isNotEmpty)
                           Divider(height: 1, color: Colors.grey[200]),
@@ -328,26 +348,14 @@ class _SuggestionFieldState extends State<SuggestionField> {
     );
   }
 
-  // ✅ Construit un sous-titre selon le type de collection
   String _buildSousTitre(Map<String, dynamic> item) {
-  final List<String> parts = [];
-
-  final specialite = item['specialite']?.toString() ?? '';
-  if (specialite.isNotEmpty) parts.add(specialite);
-
-  final molecule = item['molecule']?.toString() ?? '';
-  if (molecule.isNotEmpty) parts.add(molecule);
-
-  final dosage = item['dosage']?.toString() ?? '';
-  if (dosage.isNotEmpty) parts.add(dosage);
-
-  // ✅ Correction : deux conditions séparées
-  // final prenom = item['prenom']?.toString() ?? '';
-  // final nom = item['nom']?.toString() ?? '';
-  // if (prenom.isNotEmpty && nom.isNotEmpty) {
-  //   parts.add('$prenom $nom');
-  // }
-
-  return parts.join(' • ');
-}
+    final List<String> parts = [];
+    final specialite = item['specialite']?.toString() ?? '';
+    if (specialite.isNotEmpty) parts.add(specialite);
+    final molecule = item['molecule']?.toString() ?? '';
+    if (molecule.isNotEmpty) parts.add(molecule);
+    final dosage = item['dosage']?.toString() ?? '';
+    if (dosage.isNotEmpty) parts.add(dosage);
+    return parts.join(' • ');
+  }
 }

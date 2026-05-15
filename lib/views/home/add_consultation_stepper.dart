@@ -668,6 +668,7 @@ void dispose() {
                         displayField: 'nom',
                         controller: controllers['nom']!,
                         selectedData: {},
+                        suggestionsLocalesMap: ReferentielService.medicamentsPredefinis,
                         onSelected: (data) {
                           setState(() {
                             controllers['nom']!.text      = data['nom']?.toString()      ?? '';
