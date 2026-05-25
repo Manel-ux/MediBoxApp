@@ -46,6 +46,8 @@ dependencies:
   firebase_auth: ^6.3.0
   cloud_firestore: ^6.2.0
   intl: ^0.19.0
+  flutter_svg: ^2.3.0
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
@@ -78,9 +80,12 @@ flutter:
     - assets/images/Gemini_Generated_Image_mr48mrmr48mrmr48.png
     - assets/images/medic.png
     - assets/images/calendrier.png
-    - assets/images/medecin.png
+    # - assets/images/medecin.png
     - assets/images/alarme2.png
-    - assets/images/consultation.png
+    # - assets/images/consultation.png
+    - assets/images/Gemini_Generated_Image_mr48mrmr48mrmr48 (3).png
+    - assets/images/undraw_medicine_hqqg.svg
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

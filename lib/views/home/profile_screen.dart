@@ -30,6 +30,203 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _charger();
   }
 
+Future<void> _modifierInfos() async {
+  final prenomCtrl = TextEditingController(text: _prenom);
+  final nomCtrl    = TextEditingController(text: _nom);
+  final emailCtrl  = TextEditingController(text: _email);
+  final telCtrl    = TextEditingController(text: _telephone);
+  bool isSaving    = false;
+
+  // ✅ Capture le messenger AVANT d'ouvrir le bottom sheet
+  final messenger = ScaffoldMessenger.of(context);
+
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(24))),
+    builder: (sheetCtx) => StatefulBuilder(
+      builder: (sheetCtx, setLocal) => Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 20, 20,
+            MediaQuery.of(sheetCtx).viewInsets.bottom + 30),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Modifier mes informations',
+                style: TextStyle(
+                    fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              _buildEditField(ctrl: prenomCtrl, label: 'Prénom',
+                  icon: Icons.person_outline),
+              const SizedBox(height: 12),
+              _buildEditField(ctrl: nomCtrl, label: 'Nom',
+                  icon: Icons.person_outline),
+              const SizedBox(height: 12),
+              _buildEditField(ctrl: emailCtrl, label: 'E-mail',
+                  icon: Icons.email_outlined,
+                  keyboard: TextInputType.emailAddress),
+              const SizedBox(height: 12),
+              _buildEditField(ctrl: telCtrl, label: 'Téléphone',
+                  icon: Icons.phone_outlined,
+                  keyboard: TextInputType.phone),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: isSaving
+    ? null
+    : () async {
+        setLocal(() => isSaving = true);
+        try {
+          final uid = user?.uid ?? '';
+          final newPrenom = prenomCtrl.text.trim();
+          final newNom    = nomCtrl.text.trim();
+          final newEmail  = emailCtrl.text.trim();
+          final newTel    = telCtrl.text.trim();
+
+          await FirebaseFirestore.instance
+              .collection('Dossier_Medical')
+              .doc(uid)
+              .update({
+            'prenom':    newPrenom,
+            'nom':       newNom,
+            'email':     newEmail,
+            'telephone': newTel,
+          });
+
+          await FirebaseFirestore.instance
+              .collection('Patient')
+              .doc(uid)
+              .update({
+            'prenom':    newPrenom,
+            'nom':       newNom,
+            'email':     newEmail,
+            'telephone': newTel,
+          });
+
+          await user?.updateDisplayName(
+              '$newPrenom $newNom');
+
+          // ✅ Ferme le sheet
+          if (sheetCtx.mounted) {
+            Navigator.pop(sheetCtx);
+          }
+
+          // ✅ Attend que le sheet soit complètement fermé
+          await Future.delayed(
+              const Duration(milliseconds: 350));
+
+          // ✅ setState seulement après fermeture complète
+          if (mounted) {
+            setState(() {
+              _prenom    = newPrenom;
+              _nom       = newNom;
+              _email     = newEmail;
+              _telephone = newTel;
+            });
+          }
+
+          // ✅ messenger capturé avant
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Informations mises à jour !'),
+              backgroundColor: Color(0xFF1BC2AB),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } catch (e) {
+          setLocal(() => isSaving = false);
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text('Erreur : $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 20, height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2))
+                      : const Text(
+                          'Enregistrer',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  prenomCtrl.dispose();
+  nomCtrl.dispose();
+  emailCtrl.dispose();
+  telCtrl.dispose();
+}
+
+// ✅ Widget champ de modification
+Widget _buildEditField({
+  required TextEditingController ctrl,
+  required String label,
+  required IconData icon,
+  TextInputType keyboard = TextInputType.text,
+}) {
+  return TextField(
+    controller: ctrl,
+    keyboardType: keyboard,
+    decoration: InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: primary, size: 20),
+      filled: true,
+      fillColor: Colors.grey[50],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[200]!),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[200]!),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: primary, width: 1.5),
+      ),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    ),
+  );
+}
   Future<void> _charger() async {
     setState(() => _loading = true);
     try {
@@ -295,100 +492,108 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── Carte identité ────────────────────────────────────────────────────────
-  Widget _buildIdentiteCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+Widget _buildIdentiteCard() {
+  return Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        // Avatar initiales
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: primary.withOpacity(0.15),
+            shape: BoxShape.circle,
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Avatar initiales
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: primary.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                _initiales,
-                style: const TextStyle(
-                  color: primary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+          child: Center(
+            child: Text(
+              _initiales,
+              style: const TextStyle(
+                color: primary,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          const SizedBox(width: 16),
+        ),
+        const SizedBox(width: 16),
 
-          // Nom + username
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ✅ Nom et prénom du patient
-                Text(
-                  _nomComplet,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B2B27),
-                  ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _nomComplet,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1B2B27),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  _username,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[500],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                _username,
+                style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+              ),
+              if (_groupeSanguin.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 6),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                // Badge groupe sanguin
-                if (_groupeSanguin.isNotEmpty)
-                  Container(
-                    margin: const EdgeInsets.only(top: 6),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.bloodtype,
-                            size: 12, color: Colors.red),
-                        const SizedBox(width: 4),
-                        Text(
-                          _groupeSanguin,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bloodtype,
+                          size: 12, color: Colors.red),
+                      const SizedBox(width: 4),
+                      Text(
+                        _groupeSanguin,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+
+        // ✅ Bouton modifier
+        GestureDetector(
+          onTap: _modifierInfos,
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.edit_outlined,
+                color: primary, size: 18),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   // ── Infos personnelles ────────────────────────────────────────────────────
   Widget _buildInfosCard() {

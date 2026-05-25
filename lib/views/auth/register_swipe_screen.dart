@@ -31,7 +31,7 @@ class _RegisterSwipeScreenState extends State<RegisterSwipeScreen> {
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _telController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  String _selectedSexe = "Masculin";
+  String _selectedSexe = "Masculin"; // Valeur par défaut
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -92,14 +92,19 @@ class _RegisterSwipeScreenState extends State<RegisterSwipeScreen> {
       Navigator.pop(context);
 
       if (resultData == null) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-          (route) => false,
-        );
-      } else {
-        _showError(resultData);
-      }
+  // ✅ Passe afficherFormulaire: true pour déclencher le formulaire
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const MainNavigationScreen(
+        afficherFormulaire: true, // ✅ formulaire s'affiche une fois
+      ),
+    ),
+    (route) => false,
+  );
+} else {
+  _showError(resultData);
+}
     } else {
       if (!mounted) return;
       Navigator.pop(context);
